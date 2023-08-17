@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "target": "ES6",
+    "outDir": "./lib/",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "declaration": true,
+    "esModuleInterop": true,
+    "declarationDir": "./types/",
+    "skipLibCheck": true,
+    "lib": ["ES6", "ES2017", "DOM"],
+    "experimentalDecorators": true
+  },
+  "compileOnSave": false,
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "./test"]
+}
