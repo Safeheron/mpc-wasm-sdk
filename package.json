@@ -10,7 +10,7 @@
     "build:watch": "NODE_ENV=development webpack --stats --progress",
     "preview": "browser-sync start --config browser-sync-config.js",
     "serve": "concurrently 'npm:build:watch' 'npm:preview'",
-    "prepack": "npm run build"
+    "postinstall": "npm run build"
   },
   "files": [
     "lib/",
