@@ -1,7 +1,4 @@
-import MPCAssemblyBridge from '../mpc-assembly/MPCAssemblyBridge'
-import { Promisify } from '../utils/types'
-
-export type PromisedMPCAssemblyBridge = Promisify<MPCAssemblyBridge>
+import { PromisedMPCAssemblyBridge } from '../utils/types'
 
 export abstract class AbstractCoSigner {
   protected readonly mpcAssemblyBridge: PromisedMPCAssemblyBridge

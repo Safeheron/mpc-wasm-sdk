@@ -20,7 +20,7 @@ describe('MPC Key Gen test', function () {
     const p2 = await keyGen2.setLocalParty('B', '2')
     const p3 = await keyGen3.setLocalParty('C', '3')
 
-    console.log('parties>>>', p1, p2, p3)
+    console.log('parties >>>', p1, p2, p3)
 
     let m1: any = await keyGen1.createContext([p3, p2], pp1)
     let m2: any = await keyGen2.createContext([p1, p3], pp2)

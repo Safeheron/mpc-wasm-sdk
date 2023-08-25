@@ -28,7 +28,6 @@ async function waitForBridgeReady() {
   })
 }
 
-// TODO resolve error message
 self.addEventListener('message', async (evt) => {
   const data = evt.data as RequestMessage
   const { callId, method, params } = data

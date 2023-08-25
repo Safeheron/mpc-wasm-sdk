@@ -15,7 +15,7 @@ export interface RequestMessage {
   params?: any
 }
 
-export type MPCAssemblyMethods = ConditionalKeys<
+export type MPCAssemblyBridgeMethods = ConditionalKeys<
   MPCAssemblyBridge,
   (...props: any) => any
 >
@@ -27,3 +27,4 @@ export type Promisify<T> = {
     ? (...args: TS) => Promise<UnpackedPromise<R>>
     : never
 }
+export type PromisedMPCAssemblyBridge = Promisify<MPCAssemblyBridge>

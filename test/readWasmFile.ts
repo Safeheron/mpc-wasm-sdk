@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 
 import { loadAndInstantiateMPCAssembly } from '../src/mpc-assembly/AssemblyFsLoader'
+import { ComputeMessage } from '../src/mpc-assembly/mpc.types'
 
 export default async function readWasmFile() {
   const wasmFile = fs.readFileSync(
@@ -11,11 +12,14 @@ export default async function readWasmFile() {
   return { wasmFile }
 }
 
-export async function loadWebAssemblyInstance(): Promise<WebAssembly.Instance> {
+export async function loadWebAssemblyInstance() {
   const { wasmFile } = await readWasmFile()
   return await loadAndInstantiateMPCAssembly(new Uint8Array(wasmFile))
 }
 
-export function filterMessage(targetPartyId, ...messageList) {
+export function filterMessage(
+  targetPartyId: string,
+  ...messageList: ComputeMessage[]
+) {
   return messageList.filter((m) => m.destination === targetPartyId)
 }

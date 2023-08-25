@@ -1,19 +1,19 @@
-export function fromHexString(hexString) {
+export function fromHexString(hexString: string) {
   return new Uint8Array(
     hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)),
   )
 }
 
-export function toHexString(bytes): string {
+export function toHexString(bytes: Uint8Array): string {
   return bytes.reduce(
     (str, byte) => str + byte.toString(16).padStart(2, '0'),
     '',
   )
 }
 
-export function uint8ArrayToString(bytes, len) {
+export function uint8ArrayToString(bytes: Uint8Array, offset: number) {
   let dataString = ''
-  for (let i = 0; i < len; i++) {
+  for (let i = 0; i < offset; i++) {
     dataString += String.fromCharCode(bytes[i])
   }
 
@@ -49,8 +49,5 @@ export function uint8ArrayToInt32(bytes) {
 export function genRandomBytesHex(bytes: number) {
   const buffer = new Uint8Array(bytes)
   crypto.getRandomValues(buffer)
-  return buffer.reduce(
-    (prev, curr) => prev + curr.toString(16).padStart(2, '0'),
-    '',
-  )
+  return toHexString(buffer)
 }

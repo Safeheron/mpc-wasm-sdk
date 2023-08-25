@@ -1,9 +1,9 @@
-import { PromisedMPCAssemblyBridge } from './co-signer/AbstractCoSigner'
 import { KeyGen } from './co-signer/KeyGen'
 import { KeyRecovery } from './co-signer/KeyRecovery'
 import { KeyRefresh } from './co-signer/KeyRefresh'
 import MPCHelper from './co-signer/MPCHelper'
 import { Signer } from './co-signer/Signer'
+import { PromisedMPCAssemblyBridge } from './utils/types';
 
 interface CoSigner<T> {
   getCoSigner: () => T

@@ -1,11 +1,11 @@
 import BaseMPC from '../BaseMPC'
-import { PromisedMPCAssemblyBridge } from '../co-signer/AbstractCoSigner'
 import MPCHelper from '../co-signer/MPCHelper'
 import {
   WebviewMPCClient,
   WebviewMPCProxyClient,
   WebViewRef,
 } from './WebviewMPCClientBridge'
+import { PromisedMPCAssemblyBridge } from '../utils/types';
 
 export default class MPC extends BaseMPC {
   static init(webviewRef) {

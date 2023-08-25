@@ -1,8 +1,7 @@
 import { Class } from 'type-fest'
 import { v4 as uuidV4 } from 'uuid'
 
-import { PromisedMPCAssemblyBridge } from '../co-signer/AbstractCoSigner'
-import { MPCAssemblyMethods, RequestMessage, ResponseMessage } from './types'
+import { MPCAssemblyBridgeMethods, PromisedMPCAssemblyBridge, RequestMessage, ResponseMessage } from './types'
 
 export abstract class AbstractBridgeClient {
   private waitingMap = new Map<
@@ -29,7 +28,7 @@ export abstract class AbstractBridgeClient {
     }
   }
 
-  async request(method: MPCAssemblyMethods, ...params: any) {
+  async request(method: MPCAssemblyBridgeMethods, ...params: any) {
     return new Promise((resolve, reject) => {
       const requestId = uuidV4()
       const message: RequestMessage = {
@@ -65,12 +64,12 @@ export function createAssemblyBridgeProxy<T extends AbstractBridgeClient>(
     construct(): object {
       const proxyInstance = new ProxyClientClass()
       return new Proxy(proxyInstance, {
-        get(target: MPCAssemblyBridgeDuck<T>, p: MPCAssemblyMethods | string) {
+        get(target: MPCAssemblyBridgeDuck<T>, p: MPCAssemblyBridgeMethods | string) {
           if (Reflect.has(proxyInstance, p)) {
             return Reflect.get(proxyInstance, p)
           }
           return function (...params) {
-            return proxyInstance.request(p as MPCAssemblyMethods, ...params)
+            return proxyInstance.request(p as MPCAssemblyBridgeMethods, ...params)
           }
         },
       })
