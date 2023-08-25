@@ -1,8 +1,14 @@
-import { webcrypto } from 'crypto'
-
 import { MPC } from '../src/index.node'
 import { p1 } from './mockData'
 import readWasmFile from './readWasmFile'
+
+function generateString(bytesSize: number) {
+  let result = ''
+  for (let i = 0; i < bytesSize; i++) {
+    result += 'a'
+  }
+  return result
+}
 
 describe('WASM Util Function Test', () => {
   let mpcHelper: MPC['mpcHelper']
@@ -47,12 +53,13 @@ describe('WASM Util Function Test', () => {
     const remoteKeyPair = await mpcHelper.createKeyPair()
 
     const testData = {
-      '500B': 'hello world',
-      '1k': 'hello worldhello worldhello worldhello worldhello world',
-      '10k': 'hello worldhello worldhello worldhello world',
-      '100k': 'hello worldhello worldhello world',
-      '500k': 'hello worldhello worldhello worldhello worldhello w',
-      '1M': 'hello worldhello worldhello worldhello worldhello worldhello worldhello world',
+      '10B': generateString(10),
+      '500B': generateString(500),
+      '1k': generateString(1024),
+      '10k': generateString(10 * 1024),
+      '100k': generateString(100 * 1024),
+      '500k': generateString(500 * 1024),
+      '1000k': generateString(1000 * 1024),
     }
 
     for await (const plainText of Object.values(testData)) {

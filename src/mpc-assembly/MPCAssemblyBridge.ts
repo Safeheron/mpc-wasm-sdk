@@ -257,6 +257,7 @@ class MPCAssemblyBridge {
     )
   }
 
+  // TODO During the test, more than 1000k plaintext data encryption has a bug, which is basically determined to be related to memory operation, and the details of the problem are still being located
   encrypt(
     localPriv: string,
     remotePub: string,
@@ -268,7 +269,7 @@ class MPCAssemblyBridge {
       plain,
     }
     const byteArray = stringToUint8Array(JSON.stringify(params))
-    const estimateResultSize = byteArray.length + 500
+    const estimateResultSize = (byteArray.length + 300) * 2
 
     return this.invokeWasmMethod<Call_AuthEncrypted>(
       '_AuthEnc_encrypt',
