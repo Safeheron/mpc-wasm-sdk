@@ -1,6 +1,4 @@
-import MPCAssemblyBridge from '../mpc-assembly/MPCAssemblyBridge'
-
-import { PromisedMPCAssemblyBridge } from '../utils/types';
+import { PromisedMPCAssemblyBridge } from '../utils/types'
 
 class MPCHelper {
   private mpcAssemblyBridge: PromisedMPCAssemblyBridge
