@@ -3,4 +3,4 @@ dist
 lib/
 types/
 .idea
-
+coverage
