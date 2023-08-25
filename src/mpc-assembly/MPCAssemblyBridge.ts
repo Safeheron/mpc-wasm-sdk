@@ -80,13 +80,12 @@ class MPCAssemblyBridge {
     try {
       const buf = new Uint8Array(1024)
       const seed = crypto.getRandomValues(buf)
-      const ret = this.invokeWasmMethod<Call_SetRandomSeed>(
+      return this.invokeWasmMethod<Call_SetRandomSeed>(
         '_SetSeed',
         toHexString(seed),
         8 * 1024,
         true,
       )
-      return ret
     } catch (e) {
       console.error('set random seed failed.', e)
       return false
@@ -268,11 +267,13 @@ class MPCAssemblyBridge {
       remote_pub: remotePub,
       plain,
     }
+    const byteArray = stringToUint8Array(JSON.stringify(params))
+    const estimateResultSize = byteArray.length + 500
+
     return this.invokeWasmMethod<Call_AuthEncrypted>(
       '_AuthEnc_encrypt',
       params,
-      // TODO It is necessary to dynamically calculate the memory space to be allocated according to the length of the input parameter
-      100 * 1024,
+      estimateResultSize,
     )
   }
 
@@ -286,11 +287,14 @@ class MPCAssemblyBridge {
       remote_pub: remotePub,
       cypher,
     }
+
+    const byteArray = stringToUint8Array(JSON.stringify(cypher))
+    const estimateResultSize = byteArray.length
+
     return this.invokeWasmMethod<Call_AuthDecrypted>(
       '_AuthEnc_decrypt',
       params,
-      // TODO It is necessary to dynamically calculate the memory space to be allocated according to the length of the input parameter
-      100 * 1024,
+      estimateResultSize,
     )
   }
 
@@ -309,7 +313,7 @@ class MPCAssemblyBridge {
     )
   }
 
-  private mallocByteBuffer(len): { ptr; uint8Array: Uint8Array } {
+  private mallocByteBuffer(len: number): { ptr; uint8Array: Uint8Array } {
     const ptr = this.wasmInstance._malloc(len)
     return {
       ptr,
@@ -317,40 +321,51 @@ class MPCAssemblyBridge {
     }
   }
 
+  /**
+   * @param method  Wasm exported function method name
+   * @param params  wasm exported function params
+   * @param resultMemorySize  The maximum length of the function call result stored in the memory area, usually this length will be greater than the actual length used
+   * @param plainOutput
+   * @private
+   */
   private invokeWasmMethod<T extends Call_type<C_Methods, any, any>>(
     method: T['method'],
     params: T['params'],
-    memorySize: number = 12 * 1024,
+    resultMemorySize: number = 12 * 1024,
     plainOutput = false,
   ): T['result'] {
-    const { ptr: inputPtr, uint8Array: inputBuffer } =
-      this.mallocByteBuffer(memorySize)
+    let inputPtr, inputBuffer
+    let wasmInvokeResult = -1
 
     const { ptr: outputPtr, uint8Array: outputBuffer } =
-      this.mallocByteBuffer(memorySize)
+      this.mallocByteBuffer(resultMemorySize)
 
     const { ptr: outLenPtr, uint8Array: outLenBuff } = this.mallocByteBuffer(4)
     // Tell wasm how much space javascript allocates for output
-    outLenBuff.set(int32ToUint8Array(memorySize))
-
-    let ret = -1
+    outLenBuff.set(int32ToUint8Array(resultMemorySize))
 
     console.time(`[Execute WASM]:(${method})`)
-    if (!params) {
-      ret = this.wasmInstance[method](
+    if (Number.isInteger(params)) {
+      wasmInvokeResult = this.wasmInstance[method](
+        params,
         outputBuffer.byteOffset,
         outLenBuff.byteOffset,
       )
-    } else if (Number.isInteger(params)) {
-      ret = this.wasmInstance[method](
-        params,
+    } else if (!params) {
+      wasmInvokeResult = this.wasmInstance[method](
         outputBuffer.byteOffset,
         outLenBuff.byteOffset,
       )
     } else {
       const inputData = stringToUint8Array(JSON.stringify(params))
+      const inputSize = inputData.length
+
+      const input = this.mallocByteBuffer(inputSize)
+      inputBuffer = input.uint8Array
+      inputPtr = input.ptr
+
       inputBuffer.set(inputData)
-      ret = this.wasmInstance[method](
+      wasmInvokeResult = this.wasmInstance[method](
         inputBuffer.byteOffset,
         inputData.byteLength,
         outputBuffer.byteOffset,
@@ -358,21 +373,20 @@ class MPCAssemblyBridge {
       )
     }
     console.timeEnd(`[Execute WASM]:(${method})`)
-    console.log(`WASM [${method}] execute result: ${ret}`)
+    console.log(`WASM [${method}] execute result: ${wasmInvokeResult}`)
 
     // some method only return 0 for success, otherwise return other code
     if (plainOutput) {
-      return ret === 0
+      return wasmInvokeResult === 0
     }
 
     const outLen = uint8ArrayToInt32(outLenBuff)
     const outJsonString = uint8ArrayToString(outputBuffer, outLen)
 
     const copiedOutput = ''.concat(outJsonString)
-
     const outJson = JSON.parse(copiedOutput)
 
-    this.wasmInstance._free(inputPtr)
+    inputPtr && this.wasmInstance._free(inputPtr)
     this.wasmInstance._free(outputPtr)
     this.wasmInstance._free(outLenPtr)
 
