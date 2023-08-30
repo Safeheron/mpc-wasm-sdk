@@ -40,8 +40,8 @@ describe('MPC Signer Test', function () {
       m2 = res2
     }
 
-    console.log(m1)
+    console.log(signer1.getSignature())
 
-    expect(m1).toEqual(m2)
+    expect(signer1.getSignature()).toEqual(signer2.getSignature())
   })
 })
