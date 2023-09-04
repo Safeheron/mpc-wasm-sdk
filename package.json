@@ -14,8 +14,7 @@
     "postinstall": "npm run build"
   },
   "files": [
-    "lib/",
-    "src/"
+    "lib/"
   ],
   "author": "Yann<yanjie002@gmail.com>",
   "dependencies": {
