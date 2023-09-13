@@ -1,6 +1,7 @@
 import { loadAndInstantiateMPCAssembly } from '../mpc-assembly/AssemblyBufferLoader'
 import MPCAssemblyBridge from '../mpc-assembly/MPCAssemblyBridge'
 import { ResponseMessage } from '../utils/types'
+import { detect_Compatibility_method } from './extraMethods'
 
 type BridgeState = '' | 'init' | 'loaded' | 'failed'
 
@@ -39,6 +40,8 @@ class MPCService {
   private initFailedReason = ''
   private assemblyBridge: MPCAssemblyBridge
 
+  private detectResolver: (res: boolean, msg?: string) => void = null
+
   async setup() {
     try {
       this.state = 'init'
@@ -58,10 +61,32 @@ class MPCService {
       this.state = 'failed'
       this.initFailedReason =
         typeof e.message === 'string' ? e.message : 'init assembly failed.'
+    } finally {
+      if (this.detectResolver) {
+        this.detectResolver(this.state === 'loaded', this.initFailedReason)
+      }
     }
   }
 
   async invoke(callId: string, methodName: string, args: string) {
+    if (methodName === detect_Compatibility_method) {
+      const callbackCompatibility = (state: boolean, msg?: string) => {
+        callback(callId, methodName, { state, msg })
+      }
+
+      if (this.state !== 'loaded' && this.state !== 'failed') {
+        this.detectResolver = callbackCompatibility
+        if (this.state === '') {
+          await this.setup()
+        }
+      } else {
+        const compatibilityRes = this.state === 'loaded'
+        callbackCompatibility(compatibilityRes, this.initFailedReason)
+      }
+
+      return
+    }
+
     const handler = this.assemblyBridge[methodName]
     if (!handler || typeof handler !== 'function') {
       callback(callId, methodName, null, `Invalid method name [${methodName}]`)
