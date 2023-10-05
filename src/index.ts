@@ -4,7 +4,7 @@ import MPCHelper from './co-signer/MPCHelper'
 import { Signer } from './co-signer/Signer'
 import { loadAndInstantiateMPCAssembly } from './mpc-assembly/AssemblyBufferLoader'
 import MPCAssemblyBridge from './mpc-assembly/MPCAssemblyBridge'
-import { PromisedMPCAssemblyBridge } from './utils/types';
+import { PromisedMPCAssemblyBridge } from './utils/types'
 
 export class MPC extends BaseMPC {
   static async init() {

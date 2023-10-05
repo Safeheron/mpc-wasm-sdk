@@ -8,6 +8,7 @@ const HtmlInlineScriptPlugin = require('html-inline-script-webpack-plugin')
 const {
   BundleDeclarationsWebpackPlugin,
 } = require('bundle-declarations-webpack-plugin')
+const TerserPlugin = require('terser-webpack-plugin')
 
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -20,6 +21,7 @@ const config = {
     'mpc-worker-client': './src/worker/MPCWorkerClient.ts',
     'mpc-worker-sdk': './src/worker/MPCWorkerBridge.ts',
   },
+  devtool: false,
   watch: !isProd,
   watchOptions: {
     ignored: /node_modules/,
@@ -74,7 +76,6 @@ const config = {
           syntactic: true,
           declaration: true,
         },
-        profile: true,
       },
       formatter: {
         type: 'codeframe',
@@ -103,7 +104,15 @@ const config = {
   ],
   stats: 'minimal',
   optimization: {
-    minimize: false,
+    minimize: isProd,
+    minimizer: [
+      new TerserPlugin({
+        parallel: true,
+        exclude: /SafeheronCMP.wasm/,
+        extractComments: false,
+        minify: TerserPlugin.swcMinify,
+      }),
+    ],
   },
 }
 
