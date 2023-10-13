@@ -40,6 +40,7 @@ import type {
   KeyRefreshContextResult,
   KeyRefreshRoundParams,
   KeyRefreshRoundResult,
+  PrepareContextParams,
   SignContextParams,
   SignContextResult,
   SignRoundParams,
@@ -92,10 +93,19 @@ class MPCAssemblyBridge {
     }
   }
 
-  createContextGeneralParams(): PrepareContextResult {
+  createContextGeneralParams(
+    localPartyId: string,
+    totalPartyIndexArr: string[],
+  ): PrepareContextResult {
+    const params: PrepareContextParams = {
+      curve_type: 1,
+      party_id: localPartyId,
+      party_index_arr: totalPartyIndexArr,
+    }
+
     return this.invokeWasmMethod<Call_PrepareContextParams>(
       '_prepare_context',
-      null,
+      params,
       720 * 1024,
     )
   }
@@ -122,9 +132,9 @@ class MPCAssemblyBridge {
 
   keyGenRound(params: KeyGenRoundParams) {
     return this.invokeWasmMethod<Call_KeyGenRound>(
-      '_kg_compute_round1_3',
+      '_kg_compute_round1_6',
       params,
-      720 * 1024,
+      1024 * 1024,
     )
   }
 

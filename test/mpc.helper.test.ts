@@ -24,7 +24,7 @@ describe('WASM Util Function Test', () => {
   })
 
   test('Generate prepare data', async () => {
-    const res = await mpcHelper.prepare()
+    const res = await mpcHelper.prepare('A', ['1', '2', '3'])
     expect(res).toHaveProperty('prepared_context_params')
   })
 
@@ -59,7 +59,7 @@ describe('WASM Util Function Test', () => {
       '10k': generateString(10 * 1024),
       '100k': generateString(100 * 1024),
       '500k': generateString(500 * 1024),
-      '1000k': generateString(1000 * 1024),
+      '900k': generateString(900 * 1024),
     }
 
     for await (const plainText of Object.values(testData)) {

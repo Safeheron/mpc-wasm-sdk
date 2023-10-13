@@ -23,8 +23,11 @@ export class KeyGen extends AbstractCoSigner {
     return this.pubKey
   }
 
-  async prepareKeyGenParams() {
-    const result = await this.mpcAssemblyBridge.createContextGeneralParams()
+  async prepareKeyGenParams(localPartyId: string, partyIndexArr: string[]) {
+    const result = await this.mpcAssemblyBridge.createContextGeneralParams(
+      localPartyId,
+      partyIndexArr,
+    )
     this.keyGenPrepareParams = result.prepared_context_params
   }
 
@@ -50,7 +53,10 @@ export class KeyGen extends AbstractCoSigner {
     prepareParams?: PrepareParams,
   ): Promise<ComputeMessage[]> {
     if (!this.keyGenPrepareParams && !prepareParams) {
-      await this.prepareKeyGenParams()
+      await this.prepareKeyGenParams(this.localParty.party_id, [
+        this.localParty.index,
+        ...remoteParties.map((rp) => rp.index),
+      ])
     }
 
     if (!this.localParty) {

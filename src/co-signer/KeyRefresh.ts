@@ -14,6 +14,8 @@ export class KeyRefresh extends AbstractCoSigner {
 
   private localParty: Party
 
+  private remoteParties: Party[]
+
   private prepareParams: PrepareParams | null = null
 
   private minimalKey: string
@@ -39,8 +41,11 @@ export class KeyRefresh extends AbstractCoSigner {
     return this.localParty
   }
 
-  async prepareKeyGenParams() {
-    const result = await this.mpcAssemblyBridge.createContextGeneralParams()
+  async prepareKeyGenParams(localPartyId: string, totalIndexArr: string[]) {
+    const result = await this.mpcAssemblyBridge.createContextGeneralParams(
+      localPartyId,
+      totalIndexArr,
+    )
     this.prepareParams = result.prepared_context_params
   }
 
@@ -68,6 +73,11 @@ export class KeyRefresh extends AbstractCoSigner {
       this.localParty = localParty
     }
 
+    this.remoteParties = remoteParties.map((rp) => ({
+      party_id: rp.party_id,
+      index: rp.index,
+    }))
+
     const params: GenerateMinimalKeyParams = {
       curve_type: 1,
       n_parties: 3,
@@ -91,6 +101,7 @@ export class KeyRefresh extends AbstractCoSigner {
   }
 
   async createContext(
+    remotePartyIdArr: string[],
     prepareParams?: PrepareParams,
   ): Promise<ComputeMessage[]> {
     if (!this.minimalKey) {
@@ -98,7 +109,8 @@ export class KeyRefresh extends AbstractCoSigner {
     }
 
     if (!this.prepareParams && !prepareParams) {
-      await this.prepareKeyGenParams()
+      const partyIndexArr = [this.localParty.index, ...remotePartyIdArr]
+      await this.prepareKeyGenParams(this.localParty.party_id, partyIndexArr)
     }
 
     const params: KeyRefreshContextParams = {
@@ -133,7 +145,7 @@ export class KeyRefresh extends AbstractCoSigner {
     if (roundResult.err) {
       await this.destroy()
       throw new Error(
-        `key gen round: [${this.lastRoundIndex + 1}] occur an error:
+        `key refresh round: [${this.lastRoundIndex + 1}] occur an error:
         code: ${roundResult.err.err_code}, message: ${
           roundResult.err.err_msg
         } `,

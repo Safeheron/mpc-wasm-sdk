@@ -1,6 +1,6 @@
 export type C_Methods =
   | '_kg_create_context_compute_round0'
-  | '_kg_compute_round1_3'
+  | '_kg_compute_round1_6'
   | '_kg_destroy_context'
   | '_kg_destroy'
   | '_kr_create_context_compute_round0'
@@ -17,6 +17,7 @@ export type C_Methods =
   | '_sign_destroy'
   | '_aggregate_partial_shard'
   | '_extract_mnemo_from_sign_key'
+  | '_extract_rid_from_sign_key'
   | '_prepare_context'
   | '_SetSeed'
   | '_generate_key_pair'
@@ -165,6 +166,21 @@ export type Call_ExtractMnemonicFromSignKey = Call_type<
   ExtractMnemonicResult
 >
 
+// ------------ extract rid from sign key  ----------------------
+export type ExtractRidParams = {
+  sign_key: string
+}
+
+export interface ExtractRicResult extends MPCError {
+  rid: string
+}
+
+export type Call_ExtractRidFromSignKey = Call_type<
+  '_extract_rid_from_sign_key',
+  ExtractRidParams,
+  ExtractRicResult
+>
+
 // ----------- prepare context --------------
 export interface PrepareParams {
   N: string
@@ -178,13 +194,19 @@ export interface PrepareParams {
   pail_blum_modules_proof: string
 }
 
+export interface PrepareContextParams {
+  curve_type: Curve_Type
+  party_id: string
+  party_index_arr: string[] // hex array
+}
+
 export interface PrepareContextResult extends MPCError {
   prepared_context_params: PrepareParams
 }
 
 export type Call_PrepareContextParams = Call_type<
   '_prepare_context',
-  undefined,
+  PrepareContextParams,
   PrepareContextResult
 >
 
@@ -215,7 +237,7 @@ export type KeyGenRoundResult = MPCError &
   }
 
 export type Call_KeyGenRound = Call_type<
-  '_kg_compute_round1_3',
+  '_kg_compute_round1_6',
   KeyGenRoundParams,
   KeyGenRoundResult
 >
