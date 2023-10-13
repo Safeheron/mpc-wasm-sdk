@@ -231,9 +231,9 @@ async function runRecoverTest(useWorker) {
   ])
 
   let [nm1, nm2, nm3] = await Promise.all([
-    keyRefresh1.createContext(),
-    keyRefresh2.createContext(),
-    keyRefresh3.createContext(),
+    keyRefresh1.createContext([party2.index, party3.index]),
+    keyRefresh2.createContext([party1.index, party3.index]),
+    keyRefresh3.createContext([party1.index, party2.index]),
   ])
 
   while (
