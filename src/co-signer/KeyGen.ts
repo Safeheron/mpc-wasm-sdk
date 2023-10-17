@@ -3,6 +3,7 @@ import {
   KeyGenContextParams,
   KeyGenRoundParams,
   Party,
+  PartyWithPub,
   PrepareParams,
 } from '../mpc-assembly/mpc.types'
 import { genRandomBytesHex } from '../mpc-assembly/mpcUtil'
@@ -49,9 +50,11 @@ export class KeyGen extends AbstractCoSigner {
   }
 
   async createContext(
-    remoteParties: Party[],
+    remoteParties: PartyWithPub[],
     prepareParams?: PrepareParams,
   ): Promise<ComputeMessage[]> {
+    this.checkCommunicationKey()
+
     if (!this.keyGenPrepareParams && !prepareParams) {
       await this.prepareKeyGenParams(this.localParty.party_id, [
         this.localParty.index,
@@ -62,6 +65,12 @@ export class KeyGen extends AbstractCoSigner {
     if (!this.localParty) {
       throw new Error('You must create party first before create context.')
     }
+
+    // Add remote communication pubkey
+    remoteParties.forEach((rp) => {
+      this.addRemoteCpk(rp.party_id, rp.pub)
+    })
+
     const baseParams = {
       n_parties: 3,
       threshold: 2,
@@ -84,12 +93,14 @@ export class KeyGen extends AbstractCoSigner {
 
     this.contextId = contextResult.context
     this.lastRoundIndex = 0
-    return contextResult.out_message_list
+    return this.encryptMPCMessage(contextResult.out_message_list)
   }
 
   async runRound(
     remoteMessageList: ComputeMessage[],
   ): Promise<ComputeMessage[]> {
+    remoteMessageList = await this.decryptMPCMessage(remoteMessageList)
+
     const params: KeyGenRoundParams = {
       context: this.contextId,
       last_round_index: this.lastRoundIndex,
@@ -114,7 +125,7 @@ export class KeyGen extends AbstractCoSigner {
       this.pubKey = roundResult.pub
       await this.destroy()
     }
-    return roundResult.out_message_list || []
+    return (await this.encryptMPCMessage(roundResult.out_message_list)) || []
   }
 
   private async destroy() {

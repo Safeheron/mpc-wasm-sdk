@@ -40,13 +40,30 @@ async function runKeyGenTest(useWorker) {
     party3,
   )
 
+  await keyGenP1.setupLocalCpkp()
+  await keyGenP2.setupLocalCpkp()
+  await keyGenP3.setupLocalCpkp()
+
+  const p1Pub = keyGenP1.localCommunicationPub
+  const p2Pub = keyGenP2.localCommunicationPub
+  const p3Pub = keyGenP3.localCommunicationPub
+
   console.time('DKG')
 
   // Create Context
   let [m1, m2, m3] = await Promise.all([
-    keyGenP1.createContext([party2, party3]),
-    keyGenP2.createContext([party1, party3]),
-    keyGenP3.createContext([party1, party2]),
+    keyGenP1.createContext([
+      { ...party2, pub: p2Pub },
+      { ...party3, pub: p3Pub },
+    ]),
+    keyGenP2.createContext([
+      { ...party1, pub: p1Pub },
+      { ...party3, pub: p3Pub },
+    ]),
+    keyGenP3.createContext([
+      { ...party1, pub: p1Pub },
+      { ...party2, pub: p2Pub },
+    ]),
   ])
 
   // Run MPC Round
@@ -108,11 +125,20 @@ async function runSignTest(useWorker) {
     signerP2 = mpc.Signer.getCoSigner()
   }
 
+  await signerP1.setupLocalCpkp()
+  await signerP2.setupLocalCpkp()
+
   // ----------- Create each sign context --------------
   const participants = [partyId1, partyId2]
   let [sm1, sm2] = await Promise.all([
-    signerP1.createContext(message, signKey1, participants),
-    signerP2.createContext(message, signKey2, participants),
+    signerP1.createContext(message, signKey1, participants, {
+      partyId: partyId2,
+      pub: signerP2.localCommunicationPub,
+    }),
+    signerP2.createContext(message, signKey2, participants, {
+      partyId: partyId1,
+      pub: signerP1.localCommunicationPub,
+    }),
   ])
 
   // ----------- Switch each message and run sign round --------------
@@ -133,13 +159,12 @@ async function runSignTest(useWorker) {
 }
 
 async function runRecoverTest(useWorker) {
-  let mpc, wmpc1, wmpc2, wmpc3
+  let wmpc1, wmpc2, wmpc3
+  const mpc = await window.MPC.init('SafeheronCMP.wasm')
   if (useWorker) {
     wmpc1 = await window.WorkerMPC.init(workerSDKJSPath)
     wmpc2 = await window.WorkerMPC.init(workerSDKJSPath)
     wmpc3 = await window.WorkerMPC.init(workerSDKJSPath)
-  } else {
-    mpc = await window.MPC.init('SafeheronCMP.wasm')
   }
 
   const element1 = document.getElementById('recovery1')
@@ -172,9 +197,47 @@ async function runRecoverTest(useWorker) {
     recovery2 = mpc.KeyRecovery.getCoSigner()
   }
 
+  await recovery1.setupLocalCpkp()
+  await recovery2.setupLocalCpkp()
+
+  const { priv: lostPartyPriv, pub: lostPartyPub } =
+    await mpc.mpcHelper.createKeyPair()
+
   let [m1, m2] = await Promise.all([
-    recovery1.createContext(mnemo1, party1.index, party2.index, party3.index),
-    recovery2.createContext(mnemo2, party2.index, party1.index, party3.index),
+    recovery1.createContext({
+      localMnemonic: mnemo1,
+      localParty: {
+        partyId: party1.party_id,
+        index: party1.index,
+      },
+      remoteParty: {
+        partyId: party2.party_id,
+        index: party2.index,
+        pub: recovery2.localCommunicationPub,
+      },
+      lostParty: {
+        partyId: party3.party_id,
+        index: party3.index,
+        pub: lostPartyPub,
+      },
+    }),
+    recovery2.createContext({
+      localMnemonic: mnemo2,
+      localParty: {
+        partyId: party2.party_id,
+        index: party2.index,
+      },
+      remoteParty: {
+        partyId: party1.party_id,
+        index: party1.index,
+        pub: recovery1.localCommunicationPub,
+      },
+      lostParty: {
+        partyId: party3.party_id,
+        index: party3.index,
+        pub: lostPartyPub,
+      },
+    }),
   ])
 
   while (!recovery1.isComplete && !recovery2.isComplete) {
@@ -186,25 +249,41 @@ async function runRecoverTest(useWorker) {
 
   const X1 = recovery1.pubKeyOfThreeParty
 
-  const s1 = recovery1.partySecretKey
-  const s2 = recovery2.partySecretKey
+  const s1 = await recovery1.getEncryptedPartySecretKey()
+  const s2 = await recovery2.getEncryptedPartySecretKey()
+
+  const { plain: decryptedS1 } = await mpc.mpcHelper.decrypt(
+    lostPartyPriv,
+    recovery1.localCommunicationPub,
+    s1,
+  )
+  const { plain: decryptedS2 } = await mpc.mpcHelper.decrypt(
+    lostPartyPriv,
+    recovery2.localCommunicationPub,
+    s2,
+  )
 
   let thirdMnemo, keyRefresh1, keyRefresh2, keyRefresh3
-  if (useWorker) {
-    thirdMnemo = await wmpc3.mpcHelper.aggregateKeyShard([s1, s2], X1)
 
+  thirdMnemo = await mpc.mpcHelper.aggregateKeyShard(
+    [decryptedS1, decryptedS2],
+    X1,
+  )
+  if (useWorker) {
     keyRefresh1 = await wmpc1.KeyRefresh.getCoSigner()
     keyRefresh2 = await wmpc2.KeyRefresh.getCoSigner()
     keyRefresh3 = await wmpc3.KeyRefresh.getCoSigner()
   } else {
-    thirdMnemo = await mpc.mpcHelper.aggregateKeyShard([s1, s2], X1)
-
     keyRefresh1 = await mpc.KeyRefresh.getCoSigner()
     keyRefresh2 = await mpc.KeyRefresh.getCoSigner()
     keyRefresh3 = await mpc.KeyRefresh.getCoSigner()
   }
 
   console.timeEnd('========Recovery========')
+
+  await keyRefresh1.setupLocalCpkp()
+  await keyRefresh2.setupLocalCpkp()
+  await keyRefresh3.setupLocalCpkp()
 
   console.log('thirdMnemo', thirdMnemo)
 
@@ -216,24 +295,45 @@ async function runRecoverTest(useWorker) {
   ])
 
   await Promise.all([
-    keyRefresh1.generateMinimalKey(party1, [
-      { ...party2, ...pubAndZkp2 },
-      { ...party3, ...pubAndZkp3 },
-    ]),
-    keyRefresh2.generateMinimalKey(party2, [
-      { ...party1, ...pubAndZkp1 },
-      { ...party3, ...pubAndZkp3 },
-    ]),
-    keyRefresh3.generateMinimalKey(party3, [
-      { ...party2, ...pubAndZkp2 },
-      { ...party1, ...pubAndZkp1 },
-    ]),
+    keyRefresh1.generateMinimalKey(
+      party1,
+      [
+        { ...party2, ...pubAndZkp2 },
+        { ...party3, ...pubAndZkp3 },
+      ],
+      [
+        { partyId: party2.party_id, pub: keyRefresh2.localCommunicationPub },
+        { partyId: party3.party_id, pub: keyRefresh3.localCommunicationPub },
+      ],
+    ),
+    keyRefresh2.generateMinimalKey(
+      party2,
+      [
+        { ...party1, ...pubAndZkp1 },
+        { ...party3, ...pubAndZkp3 },
+      ],
+      [
+        { partyId: party1.party_id, pub: keyRefresh1.localCommunicationPub },
+        { partyId: party3.party_id, pub: keyRefresh3.localCommunicationPub },
+      ],
+    ),
+    keyRefresh3.generateMinimalKey(
+      party3,
+      [
+        { ...party2, ...pubAndZkp2 },
+        { ...party1, ...pubAndZkp1 },
+      ],
+      [
+        { partyId: party1.party_id, pub: keyRefresh1.localCommunicationPub },
+        { partyId: party2.party_id, pub: keyRefresh2.localCommunicationPub },
+      ],
+    ),
   ])
 
   let [nm1, nm2, nm3] = await Promise.all([
-    keyRefresh1.createContext([party2.index, party3.index]),
-    keyRefresh2.createContext([party1.index, party3.index]),
-    keyRefresh3.createContext([party1.index, party2.index]),
+    keyRefresh1.createContext(),
+    keyRefresh2.createContext(),
+    keyRefresh3.createContext(),
   ])
 
   while (

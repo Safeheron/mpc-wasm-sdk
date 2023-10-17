@@ -16,15 +16,41 @@ describe('MPC Key Gen test', function () {
     const keyGen2 = mpc2.KeyGen.getCoSigner()
     const keyGen3 = mpc3.KeyGen.getCoSigner()
 
+    await keyGen1.setupLocalCpkp()
+    await keyGen2.setupLocalCpkp()
+    await keyGen3.setupLocalCpkp()
+
     const p1 = await keyGen1.setLocalParty('A', '1')
     const p2 = await keyGen2.setLocalParty('B', '2')
     const p3 = await keyGen3.setLocalParty('C', '3')
 
+    const p1Pub = keyGen1.localCommunicationPub
+    const p2Pub = keyGen2.localCommunicationPub
+    const p3Pub = keyGen3.localCommunicationPub
+
     console.log('parties >>>', p1, p2, p3)
 
-    let m1: any = await keyGen1.createContext([p3, p2], pp1)
-    let m2: any = await keyGen2.createContext([p1, p3], pp2)
-    let m3: any = await keyGen3.createContext([p1, p2], pp3)
+    let m1: any = await keyGen1.createContext(
+      [
+        { ...p3, pub: p3Pub },
+        { ...p2, pub: p2Pub },
+      ],
+      pp1,
+    )
+    let m2: any = await keyGen2.createContext(
+      [
+        { ...p1, pub: p1Pub },
+        { ...p3, pub: p3Pub },
+      ],
+      pp2,
+    )
+    let m3: any = await keyGen3.createContext(
+      [
+        { ...p1, pub: p1Pub },
+        { ...p2, pub: p2Pub },
+      ],
+      pp3,
+    )
 
     let round = 0
     while (!(keyGen1.isComplete && keyGen2.isComplete && keyGen3.isComplete)) {

@@ -45,6 +45,8 @@ export interface Party {
   index: string
 }
 
+export type PartyWithPub = Party & { pub: string }
+
 interface MPCError {
   err?: {
     err_code: number

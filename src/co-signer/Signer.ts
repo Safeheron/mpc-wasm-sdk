@@ -19,7 +19,11 @@ export class Signer extends AbstractCoSigner {
     message: string,
     signKey: string,
     participantsPartyIds: string[],
+    remotePub: { partyId: string; pub: string },
   ): Promise<ComputeMessage[]> {
+    this.checkCommunicationKey()
+    this.addRemoteCpk(remotePub.partyId, remotePub.pub)
+
     this.message = message
     const params: SignContextParams = {
       participants: participantsPartyIds,
@@ -37,12 +41,14 @@ export class Signer extends AbstractCoSigner {
 
     this.contextId = contextResult.context
 
-    return contextResult.out_message_list
+    return await this.encryptMPCMessage(contextResult.out_message_list)
   }
 
   async runRound(
     remoteMessageList: ComputeMessage[],
   ): Promise<ComputeMessage[]> {
+    remoteMessageList = await this.decryptMPCMessage(remoteMessageList)
+
     const params: SignRoundParams = {
       context: this.contextId,
       last_round_index: this.lastRoundIndex,
@@ -67,7 +73,7 @@ export class Signer extends AbstractCoSigner {
       await this.destroy()
     }
 
-    return roundResult.out_message_list
+    return await this.encryptMPCMessage(roundResult.out_message_list)
   }
 
   private async destroy() {

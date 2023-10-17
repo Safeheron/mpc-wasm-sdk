@@ -33,9 +33,47 @@ describe('MPC Key Recovery test', function () {
     const recovery1 = mpc1.KeyRecovery.getCoSigner()
     const recovery2 = mpc2.KeyRecovery.getCoSigner()
 
+    await recovery1.setupLocalCpkp()
+    await recovery2.setupLocalCpkp()
+
+    const { priv: lostPartyPriv, pub: lostPartyPub } =
+      await mpc1.mpcHelper.createKeyPair()
+
     let [m1, m2] = await Promise.all([
-      recovery1.createContext(mnemo1, party1.index, party2.index, party3.index),
-      recovery2.createContext(mnemo2, party2.index, party1.index, party3.index),
+      recovery1.createContext({
+        localMnemonic: mnemo1,
+        localParty: {
+          partyId: party1.party_id,
+          index: party1.index,
+        },
+        remoteParty: {
+          partyId: party2.party_id,
+          index: party2.index,
+          pub: recovery2.localCommunicationPub,
+        },
+        lostParty: {
+          partyId: party3.party_id,
+          index: party3.index,
+          pub: lostPartyPub,
+        },
+      }),
+      recovery2.createContext({
+        localMnemonic: mnemo2,
+        localParty: {
+          partyId: party2.party_id,
+          index: party2.index,
+        },
+        remoteParty: {
+          partyId: party1.party_id,
+          index: party1.index,
+          pub: recovery1.localCommunicationPub,
+        },
+        lostParty: {
+          partyId: party3.party_id,
+          index: party3.index,
+          pub: lostPartyPub,
+        },
+      }),
     ])
 
     while (!recovery1.isComplete && !recovery2.isComplete) {
@@ -55,14 +93,28 @@ describe('MPC Key Recovery test', function () {
 
     expect(pub1).toEqual(pub2)
 
-    const s1 = recovery1.partySecretKey
-    const s2 = recovery2.partySecretKey
+    const s1 = await recovery1.getEncryptedPartySecretKey()
+    const s2 = await recovery2.getEncryptedPartySecretKey()
 
     console.log('X>>>', X1)
     console.log('pub>>>', pub1)
     console.log('party secret>>>', s1, s2)
 
-    const thirdMnemo = await mpc1.mpcHelper.aggregateKeyShard([s1, s2], X1)
+    const { plain: decryptedS1 } = await mpc1.mpcHelper.decrypt(
+      lostPartyPriv,
+      recovery1.localCommunicationPub,
+      s1,
+    )
+    const { plain: decryptedS2 } = await mpc1.mpcHelper.decrypt(
+      lostPartyPriv,
+      recovery2.localCommunicationPub,
+      s2,
+    )
+
+    const thirdMnemo = await mpc1.mpcHelper.aggregateKeyShard(
+      [decryptedS1, decryptedS2],
+      X1,
+    )
 
     console.log('thirdMnemo', thirdMnemo.mnemo)
 

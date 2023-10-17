@@ -35,6 +35,10 @@ describe('MPC Key Refresh test', function () {
     const keyRefresh2 = mpc2.KeyRefresh.getCoSigner()
     const keyRefresh3 = mpc3.KeyRefresh.getCoSigner()
 
+    await keyRefresh1.setupLocalCpkp()
+    await keyRefresh2.setupLocalCpkp()
+    await keyRefresh3.setupLocalCpkp()
+
     console.time('KeyRefresh')
 
     const [pubAndZkp1, pubAndZkp2, pubAndZkp3] = await Promise.all([
@@ -45,18 +49,39 @@ describe('MPC Key Refresh test', function () {
     console.log('pubAndZkp done')
 
     await Promise.all([
-      keyRefresh1.generateMinimalKey(party1, [
-        { ...party2, ...pubAndZkp2 },
-        { ...party3, ...pubAndZkp3 },
-      ]),
-      keyRefresh2.generateMinimalKey(party2, [
-        { ...party1, ...pubAndZkp1 },
-        { ...party3, ...pubAndZkp3 },
-      ]),
-      keyRefresh3.generateMinimalKey(party3, [
-        { ...party2, ...pubAndZkp2 },
-        { ...party1, ...pubAndZkp1 },
-      ]),
+      keyRefresh1.generateMinimalKey(
+        party1,
+        [
+          { ...party2, ...pubAndZkp2 },
+          { ...party3, ...pubAndZkp3 },
+        ],
+        [
+          { partyId: party2.party_id, pub: keyRefresh2.localCommunicationPub },
+          { partyId: party3.party_id, pub: keyRefresh3.localCommunicationPub },
+        ],
+      ),
+      keyRefresh2.generateMinimalKey(
+        party2,
+        [
+          { ...party1, ...pubAndZkp1 },
+          { ...party3, ...pubAndZkp3 },
+        ],
+        [
+          { partyId: party1.party_id, pub: keyRefresh1.localCommunicationPub },
+          { partyId: party3.party_id, pub: keyRefresh3.localCommunicationPub },
+        ],
+      ),
+      keyRefresh3.generateMinimalKey(
+        party3,
+        [
+          { ...party2, ...pubAndZkp2 },
+          { ...party1, ...pubAndZkp1 },
+        ],
+        [
+          { partyId: party1.party_id, pub: keyRefresh1.localCommunicationPub },
+          { partyId: party2.party_id, pub: keyRefresh2.localCommunicationPub },
+        ],
+      ),
     ])
 
     console.log('MinimalKey done')
@@ -70,9 +95,9 @@ describe('MPC Key Refresh test', function () {
     console.log('prepare done')
 
     let [m1, m2, m3] = await Promise.all([
-      keyRefresh1.createContext([party2.index, party3.index]),
-      keyRefresh2.createContext([party1.index, party3.index]),
-      keyRefresh3.createContext([party1.index, party2.index]),
+      keyRefresh1.createContext(),
+      keyRefresh2.createContext(),
+      keyRefresh3.createContext(),
     ])
     console.log('createContext done')
 

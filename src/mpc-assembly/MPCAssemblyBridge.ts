@@ -61,8 +61,6 @@ import {
   uint8ArrayToString,
 } from './mpcUtil'
 
-let instance: MPCAssemblyBridge | null = null
-
 class MPCAssemblyBridge {
   private readonly wasmInstance?: any
 
@@ -70,11 +68,6 @@ class MPCAssemblyBridge {
 
   constructor(wasmInstance: WebAssembly.Instance) {
     this.wasmInstance = wasmInstance
-    if (!instance) {
-      // eslint-disable-next-line @typescript-eslint/no-this-alias
-      instance = this
-    }
-    return instance
   }
 
   setupRandomSeed(): boolean {
@@ -267,7 +260,14 @@ class MPCAssemblyBridge {
     )
   }
 
-  // TODO During the test, more than 1000k plaintext data encryption has a bug, which is basically determined to be related to memory operation, and the details of the problem are still being located
+  /**
+   * Currently under 2000k Data can encrypt success.
+   * Due to a problem in the automatic growth of wasm memory, there is still a problem when encrypting data above 2000k,
+   * which will be solved in subsequent version
+   * @param localPriv
+   * @param remotePub
+   * @param plain
+   */
   encrypt(
     localPriv: string,
     remotePub: string,

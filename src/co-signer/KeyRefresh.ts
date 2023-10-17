@@ -64,6 +64,7 @@ export class KeyRefresh extends AbstractCoSigner {
   async generateMinimalKey(
     localParty: Party,
     remoteParties: GenerateMinimalKeyParams['remote_parties'],
+    remotePubs: { partyId: string; pub: string }[],
   ) {
     if (!this.mnemo) {
       throw new Error(`Mnemonic lost! You must generate pub and zkp first`)
@@ -72,6 +73,10 @@ export class KeyRefresh extends AbstractCoSigner {
     if (!this.localParty) {
       this.localParty = localParty
     }
+
+    remotePubs.forEach((rp) => {
+      this.addRemoteCpk(rp.partyId, rp.pub)
+    })
 
     this.remoteParties = remoteParties.map((rp) => ({
       party_id: rp.party_id,
@@ -101,7 +106,6 @@ export class KeyRefresh extends AbstractCoSigner {
   }
 
   async createContext(
-    remotePartyIdArr: string[],
     prepareParams?: PrepareParams,
   ): Promise<ComputeMessage[]> {
     if (!this.minimalKey) {
@@ -109,9 +113,14 @@ export class KeyRefresh extends AbstractCoSigner {
     }
 
     if (!this.prepareParams && !prepareParams) {
-      const partyIndexArr = [this.localParty.index, ...remotePartyIdArr]
-      await this.prepareKeyGenParams(this.localParty.party_id, partyIndexArr)
+      const allPartyIndexArr = [
+        this.localParty.index,
+        ...this.remoteParties.map((rp) => rp.index),
+      ]
+      await this.prepareKeyGenParams(this.localParty.party_id, allPartyIndexArr)
     }
+
+    this.checkCommunicationKey()
 
     const params: KeyRefreshContextParams = {
       n_parties: 3,
@@ -130,12 +139,14 @@ export class KeyRefresh extends AbstractCoSigner {
 
     this.contextId = contextResult.context
     this.lastRoundIndex = 0
-    return contextResult.out_message_list
+    return await this.encryptMPCMessage(contextResult.out_message_list)
   }
 
   async runRound(
     remoteMessageList: ComputeMessage[],
   ): Promise<ComputeMessage[]> {
+    remoteMessageList = await this.decryptMPCMessage(remoteMessageList)
+
     const params: KeyRefreshRoundParams = {
       context: this.contextId,
       last_round_index: this.lastRoundIndex,
@@ -161,7 +172,7 @@ export class KeyRefresh extends AbstractCoSigner {
       this.isComplete = true
       await this.destroy()
     }
-    return roundResult.out_message_list || []
+    return (await this.encryptMPCMessage(roundResult.out_message_list)) || []
   }
 
   async destroy() {
