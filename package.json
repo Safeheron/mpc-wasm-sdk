@@ -1,6 +1,6 @@
 {
   "name": "@safeheron/mpc-wasm-sdk",
-  "version": "0.2.0-rc0",
+  "version": "0.3.0-rc.0",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
