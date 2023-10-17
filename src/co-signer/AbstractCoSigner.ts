@@ -21,6 +21,10 @@ export abstract class AbstractCoSigner {
     this.mpcAssemblyBridge = mpcBridge
   }
 
+  get localCommunicationPriv() {
+    return this.localCpkp.priv
+  }
+
   get localCommunicationPub() {
     return this.localCpkp.pub
   }
