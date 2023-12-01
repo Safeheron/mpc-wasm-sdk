@@ -24,12 +24,9 @@ export class KeyGen extends AbstractCoSigner {
     return this.pubKey
   }
 
-  async prepareKeyGenParams(localPartyId: string, partyIndexArr: string[]) {
-    const result = await this.mpcAssemblyBridge.createContextGeneralParams(
-      localPartyId,
-      partyIndexArr,
-    )
-    this.keyGenPrepareParams = result.prepared_context_params
+  async prepareKeyGenParams() {
+    const result = await this.mpcAssemblyBridge.createContextGeneralParams()
+    this.keyGenPrepareParams = result.prepared_data
   }
 
   async createParty(partyId: string): Promise<Party> {
@@ -56,10 +53,7 @@ export class KeyGen extends AbstractCoSigner {
     this.checkCommunicationKey()
 
     if (!this.keyGenPrepareParams && !prepareParams) {
-      await this.prepareKeyGenParams(this.localParty.party_id, [
-        this.localParty.index,
-        ...remoteParties.map((rp) => rp.index),
-      ])
+      await this.prepareKeyGenParams()
     }
 
     if (!this.localParty) {
@@ -79,7 +73,7 @@ export class KeyGen extends AbstractCoSigner {
     const params: KeyGenContextParams = {
       ...baseParams,
       remote_parties: remoteParties,
-      prepared_context_params: prepareParams || this.keyGenPrepareParams,
+      prepared_data: prepareParams || this.keyGenPrepareParams,
       ...this.localParty,
     }
     const contextResult =
@@ -130,7 +124,7 @@ export class KeyGen extends AbstractCoSigner {
 
   private async destroy() {
     await this.mpcAssemblyBridge.destroyKeyGenContextById(this.contextId)
-    this.contextId = 0
+    this.contextId = ''
     this.localParty = undefined
     this.lastRoundIndex = 0
   }

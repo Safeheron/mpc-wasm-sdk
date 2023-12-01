@@ -2,30 +2,26 @@ export type C_Methods =
   | '_kg_create_context_compute_round0'
   | '_kg_compute_round1_6'
   | '_kg_destroy_context'
-  | '_kg_destroy'
   | '_kr_create_context_compute_round0'
   | '_kr_compute_round1_3'
   | '_kr_destroy_context'
-  | '_kr_destroy'
   | '_mkr_create_context_compute_round0'
   | '_mkr_compute_round1_3'
   | '_mkr_destroy_context'
-  | '_mkr_destroy'
   | '_sign_create_context_compute_round0'
   | '_sign_compute_round1_4'
   | '_sign_destroy_context'
-  | '_sign_destroy'
   | '_aggregate_partial_shard'
   | '_extract_mnemo_from_sign_key'
   | '_extract_rid_from_sign_key'
-  | '_prepare_context'
+  | '_prepare_data'
   | '_SetSeed'
   | '_generate_key_pair'
   | '_AuthEnc_encrypt'
   | '_AuthEnc_decrypt'
   | '_ecdsa_sign'
   | '_ecdsa_verify'
-  | '_generate_pub_zkp'
+  | '_generate_pub_with_zkp'
   | '_generate_minimal_key'
 
 // 1: secp256k1, 2:p256
@@ -62,13 +58,13 @@ export interface ComputeMessage {
 }
 
 export interface ComputeCommonParams {
-  context: number
+  context: string
   last_round_index: number
   in_message_list: ComputeMessage[]
 }
 
 export interface ComputeCommonResult {
-  context: number
+  context: string
   current_round_index: number
   out_message_list: ComputeMessage[]
 }
@@ -196,18 +192,14 @@ export interface PrepareParams {
   pail_blum_modules_proof: string
 }
 
-export interface PrepareContextParams {
-  curve_type: Curve_Type
-  party_id: string
-  party_index_arr: string[] // hex array
-}
+export type PrepareContextParams = undefined
 
 export interface PrepareContextResult extends MPCError {
-  prepared_context_params: PrepareParams
+  prepared_data: PrepareParams
 }
 
 export type Call_PrepareContextParams = Call_type<
-  '_prepare_context',
+  '_prepare_data',
   PrepareContextParams,
   PrepareContextResult
 >
@@ -218,7 +210,7 @@ export type KeyGenContextParams = {
   threshold: number
   curve_type: number
   remote_parties: Party[]
-  prepared_context_params: PrepareParams
+  prepared_data: PrepareParams
 } & Party
 
 export type KeyGenContextResult = ComputeCommonResult & MPCError
@@ -251,7 +243,7 @@ export interface SignContextParams {
   /**
    * Hex string of serialized transaction object
    */
-  pending_message: string
+  digest: string
   sign_key: string
 }
 
@@ -308,7 +300,7 @@ export type KeyRecoveryRoundParams = ComputeCommonParams
 
 export type KeyRecoveryRoundResult = MPCError &
   ComputeCommonResult & {
-    s: string // partial secret key shard of the third party
+    x_ki: string // partial secret key shard of the third party
     X_k: string // public key shard of the third party
     pub: string // full public key
   }
@@ -323,7 +315,7 @@ export type Call_KeyRecoveryRound = Call_type<
 export interface KeyRefreshContextParams {
   n_parties: number
   minimal_sign_key: string
-  prepared_context_params: PrepareParams | null
+  prepared_data: PrepareParams | null
   // true: update key shards, false: don't update key shards
   update_key_shards: boolean
 }
@@ -351,15 +343,9 @@ export type Call_KeyRefreshRound = Call_type<
 >
 
 // ----------- destroy key refresh context --------------
-export type Call_DestroyContextForKeyRefresh = Call_type<
-  '_mkr_destroy',
-  null,
-  null
->
-
 export type Call_DestroySingleContextForKeyRefresh = Call_type<
   '_mkr_destroy_context',
-  number,
+  { contextId: string },
   null
 >
 
@@ -375,7 +361,7 @@ export interface GeneratePubAndZkpResult extends MPCError {
 }
 
 export type Call_GeneratePubAndZkp = Call_type<
-  '_generate_pub_zkp',
+  '_generate_pub_with_zkp',
   GeneratePubAndZkpParams,
   GeneratePubAndZkpResult
 >

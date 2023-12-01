@@ -108,11 +108,11 @@ export class KeyRecovery extends AbstractCoSigner {
     }
 
     this.lastRoundIndex = res.current_round_index
-    const isComplete = !!res.X_k && !!res.s
+    const isComplete = !!res.X_k && !!res.x_ki
     if (isComplete) {
       this.isComplete = true
       this._pubKeyOfThreeParty = res.X_k
-      this._partySecretKey = res.s
+      this._partySecretKey = res.x_ki
       this._pub = res.pub
       await this.destroy()
     }
@@ -131,6 +131,6 @@ export class KeyRecovery extends AbstractCoSigner {
 
   private async destroy() {
     await this.mpcAssemblyBridge.destroyKeyRecoveryContextById(this.contextId)
-    this.contextId = 0
+    this.contextId = ''
   }
 }

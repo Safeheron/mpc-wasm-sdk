@@ -24,8 +24,8 @@ describe('WASM Util Function Test', () => {
   })
 
   test('Generate prepare data', async () => {
-    const res = await mpcHelper.prepare('A', ['1', '2', '3'])
-    expect(res).toHaveProperty('prepared_context_params')
+    const res = await mpcHelper.prepare()
+    expect(res).toHaveProperty('prepared_data')
   })
 
   test('Extract mnemonic from signKey', async () => {
