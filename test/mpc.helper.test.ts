@@ -86,7 +86,8 @@ describe('WASM Util Function Test', () => {
 
     console.log('keypair: ', keypair)
 
-    const digest = '11111111111111111111'
+    const digest =
+      '1111111111111111111111111111111111111111111111111111111111111111'
     const sigRes = await mpcHelper.sign(keypair.priv, digest)
 
     console.log('sigRes: ', sigRes)
