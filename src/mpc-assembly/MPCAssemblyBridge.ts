@@ -40,7 +40,6 @@ import type {
   KeyRefreshContextResult,
   KeyRefreshRoundParams,
   KeyRefreshRoundResult,
-  PrepareContextParams,
   SignContextParams,
   SignContextResult,
   SignRoundParams,
@@ -73,10 +72,10 @@ class MPCAssemblyBridge {
   setupRandomSeed(): boolean {
     try {
       const buf = new Uint8Array(1024)
-      const seed = crypto.getRandomValues(buf)
+      crypto.getRandomValues(buf)
       return this.invokeWasmMethod<Call_SetRandomSeed>(
         '_SetSeed',
-        toHexString(seed),
+        toHexString(buf),
         8 * 1024,
         true,
       )
