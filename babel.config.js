@@ -1,5 +1,3 @@
-const plugins = [['@babel/plugin-proposal-decorators', { version: 'legacy' }]]
-
 module.exports = {
   presets: [
     [
@@ -8,5 +6,4 @@ module.exports = {
     ],
     '@babel/preset-typescript',
   ],
-  plugins: plugins,
 }
