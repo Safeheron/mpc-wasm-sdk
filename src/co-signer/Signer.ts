@@ -27,7 +27,7 @@ export class Signer extends AbstractCoSigner {
     this.message = message
     const params: SignContextParams = {
       participants: participantsPartyIds,
-      pending_message: this.message,
+      digest: this.message,
       sign_key: signKey,
     }
     const contextResult = await this.mpcAssemblyBridge.signContext(params)
@@ -78,7 +78,7 @@ export class Signer extends AbstractCoSigner {
 
   private async destroy() {
     await this.mpcAssemblyBridge.destroySignContextById(this.contextId)
-    this.contextId = 0
+    this.contextId = ''
     this.lastRoundIndex = 0
   }
 }

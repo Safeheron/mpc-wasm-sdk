@@ -41,12 +41,9 @@ export class KeyRefresh extends AbstractCoSigner {
     return this.localParty
   }
 
-  async prepareKeyGenParams(localPartyId: string, totalIndexArr: string[]) {
-    const result = await this.mpcAssemblyBridge.createContextGeneralParams(
-      localPartyId,
-      totalIndexArr,
-    )
-    this.prepareParams = result.prepared_context_params
+  async prepareKeyGenParams() {
+    const result = await this.mpcAssemblyBridge.createContextGeneralParams()
+    this.prepareParams = result.prepared_data
   }
 
   async generatePubAndZkp(mnemo: string): Promise<GeneratePubAndZkpResult> {
@@ -113,11 +110,7 @@ export class KeyRefresh extends AbstractCoSigner {
     }
 
     if (!this.prepareParams && !prepareParams) {
-      const allPartyIndexArr = [
-        this.localParty.index,
-        ...this.remoteParties.map((rp) => rp.index),
-      ]
-      await this.prepareKeyGenParams(this.localParty.party_id, allPartyIndexArr)
+      await this.prepareKeyGenParams()
     }
 
     this.checkCommunicationKey()
@@ -125,7 +118,7 @@ export class KeyRefresh extends AbstractCoSigner {
     const params: KeyRefreshContextParams = {
       n_parties: 3,
       minimal_sign_key: this.minimalKey,
-      prepared_context_params: this.prepareParams,
+      prepared_data: this.prepareParams,
       update_key_shards: false,
     }
 
@@ -177,6 +170,6 @@ export class KeyRefresh extends AbstractCoSigner {
 
   async destroy() {
     await this.mpcAssemblyBridge.destroyKeyRefreshContextById(this.contextId)
-    this.contextId = 0
+    this.contextId = ''
   }
 }

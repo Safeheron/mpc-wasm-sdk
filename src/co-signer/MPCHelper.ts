@@ -11,11 +11,8 @@ class MPCHelper {
     return this.mpcAssemblyBridge.setupRandomSeed()
   }
 
-  async prepare(localPartyId: string, partyIndexArr: string[]) {
-    return this.mpcAssemblyBridge.createContextGeneralParams(
-      localPartyId,
-      partyIndexArr,
-    )
+  async prepare() {
+    return this.mpcAssemblyBridge.createContextGeneralParams()
   }
 
   async extractMnemonicFromSignKey(signKey: string) {

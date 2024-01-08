@@ -85,11 +85,10 @@ describe('MPC Key Refresh test', function () {
     ])
 
     console.log('MinimalKey done')
-    const allPartyIndexArr = [party1.index, party2.index, party3.index]
     await Promise.all([
-      keyRefresh1.prepareKeyGenParams(party1.party_id, allPartyIndexArr),
-      keyRefresh2.prepareKeyGenParams(party2.party_id, allPartyIndexArr),
-      keyRefresh3.prepareKeyGenParams(party3.party_id, allPartyIndexArr),
+      keyRefresh1.prepareKeyGenParams(),
+      keyRefresh2.prepareKeyGenParams(),
+      keyRefresh3.prepareKeyGenParams(),
     ])
 
     console.log('prepare done')

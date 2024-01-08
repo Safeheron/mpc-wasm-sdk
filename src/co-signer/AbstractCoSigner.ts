@@ -6,7 +6,7 @@ export type KeyPair = { priv: string; pub: string }
 export abstract class AbstractCoSigner {
   protected readonly mpcAssemblyBridge: PromisedMPCAssemblyBridge
 
-  protected contextId: number
+  protected contextId: string
   protected lastRoundIndex = 0
 
   isComplete = false

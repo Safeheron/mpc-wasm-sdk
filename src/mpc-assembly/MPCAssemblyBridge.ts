@@ -40,7 +40,6 @@ import type {
   KeyRefreshContextResult,
   KeyRefreshRoundParams,
   KeyRefreshRoundResult,
-  PrepareContextParams,
   SignContextParams,
   SignContextResult,
   SignRoundParams,
@@ -64,7 +63,7 @@ import {
 class MPCAssemblyBridge {
   private readonly wasmInstance?: any
 
-  readonly ssid = 'Safeheron_MPC_CMP'
+  readonly sid = 'Safeheron_MPC_CMP'
 
   constructor(wasmInstance: WebAssembly.Instance) {
     this.wasmInstance = wasmInstance
@@ -73,10 +72,10 @@ class MPCAssemblyBridge {
   setupRandomSeed(): boolean {
     try {
       const buf = new Uint8Array(1024)
-      const seed = crypto.getRandomValues(buf)
+      crypto.getRandomValues(buf)
       return this.invokeWasmMethod<Call_SetRandomSeed>(
         '_SetSeed',
-        toHexString(seed),
+        toHexString(buf),
         8 * 1024,
         true,
       )
@@ -86,20 +85,11 @@ class MPCAssemblyBridge {
     }
   }
 
-  createContextGeneralParams(
-    localPartyId: string,
-    totalPartyIndexArr: string[],
-  ): PrepareContextResult {
-    const params: PrepareContextParams = {
-      curve_type: 1,
-      party_id: localPartyId,
-      party_index_arr: totalPartyIndexArr,
-    }
-
+  createContextGeneralParams(): PrepareContextResult {
     return this.invokeWasmMethod<Call_PrepareContextParams>(
-      '_prepare_context',
-      params,
-      720 * 1024,
+      '_prepare_data',
+      undefined,
+      1024 * 1024,
     )
   }
 
@@ -115,7 +105,7 @@ class MPCAssemblyBridge {
   keyGenContextAndComputeRound(
     params: KeyGenContextParams,
   ): KeyGenContextResult {
-    const keyGenParams = { ...params, ssid: this.ssid }
+    const keyGenParams = { ...params, sid: this.sid }
     return this.invokeWasmMethod<Call_KeyGenContextAndRound0>(
       '_kg_create_context_compute_round0',
       keyGenParams,
@@ -131,16 +121,12 @@ class MPCAssemblyBridge {
     )
   }
 
-  destroyKeyGenContexts() {
-    this.wasmInstance._kg_destroy()
-  }
-
-  destroyKeyGenContextById(ctxId: number) {
-    this.wasmInstance._kg_destroy_context(ctxId)
+  destroyKeyGenContextById(contextId: string) {
+    this.wasmInstance._kg_destroy_context({ contextId })
   }
 
   signContext(params: SignContextParams): SignContextResult {
-    const signContextParams = { ...params, ssid: this.ssid }
+    const signContextParams = { ...params, sid: this.sid }
     return this.invokeWasmMethod<Call_SignContextAndRound0>(
       '_sign_create_context_compute_round0',
       signContextParams,
@@ -156,12 +142,8 @@ class MPCAssemblyBridge {
     )
   }
 
-  destroySignContexts() {
-    this.wasmInstance._sign_destroy()
-  }
-
-  destroySignContextById(ctxId: number) {
-    this.wasmInstance._sign_destroy_context(ctxId)
+  destroySignContextById(contextId: string) {
+    this.wasmInstance._sign_destroy_context(contextId)
   }
 
   generatePubAndZkp(mnemo: string): GeneratePubAndZkpResult {
@@ -170,7 +152,7 @@ class MPCAssemblyBridge {
       mnemo,
     }
     return this.invokeWasmMethod<Call_GeneratePubAndZkp>(
-      '_generate_pub_zkp',
+      '_generate_pub_with_zkp',
       params,
       10 * 1024,
     )
@@ -187,7 +169,7 @@ class MPCAssemblyBridge {
   }
 
   keyRefreshContext(params: KeyRefreshContextParams): KeyRefreshContextResult {
-    const keyRefreshParams = { ...params, ssid: this.ssid }
+    const keyRefreshParams = { ...params, sid: this.sid }
     return this.invokeWasmMethod<Call_KeyRefreshContext>(
       '_mkr_create_context_compute_round0',
       keyRefreshParams,
@@ -203,10 +185,10 @@ class MPCAssemblyBridge {
     )
   }
 
-  destroyKeyRefreshContextById(ctxId: number) {
+  destroyKeyRefreshContextById(contextId: string) {
     return this.invokeWasmMethod<Call_DestroySingleContextForKeyRefresh>(
       '_mkr_destroy_context',
-      ctxId,
+      { contextId },
       1024,
       true,
     )
@@ -228,12 +210,8 @@ class MPCAssemblyBridge {
     )
   }
 
-  destroyKeyRecoveryContext() {
-    return this.invokeWasmMethod('_kr_destroy', undefined, 0, true)
-  }
-
-  destroyKeyRecoveryContextById(contextId: number) {
-    return this.invokeWasmMethod('_kr_destroy_context', contextId, 0, true)
+  destroyKeyRecoveryContextById(contextId: string) {
+    return this.invokeWasmMethod('_kr_destroy_context', { contextId }, 0, true)
   }
 
   aggregateKeyShard(
