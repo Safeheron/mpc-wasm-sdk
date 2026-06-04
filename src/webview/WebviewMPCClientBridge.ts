@@ -18,9 +18,10 @@ export class WebviewMPCClient extends AbstractBridgeClient {
   send(message: RequestMessage) {
     const { callId, method, params } = message
 
-    const script = `window.mpc.invoke('${callId}', '${method}', '${JSON.stringify(
-      params,
-    )}'); void(0);`
+    const script =
+      `window.mpc.invoke(${JSON.stringify(callId)}, ` +
+      `${JSON.stringify(method)}, ` +
+      `${JSON.stringify(JSON.stringify(params))}); void(0);`
 
     this.webviewRef.injectJavaScript(script)
   }
